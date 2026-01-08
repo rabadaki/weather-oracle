@@ -1,0 +1,13 @@
+--- Fetching Open-Meteo GFS Hindcasts (Seoul) ---
+OM Fetch Success: 1827 days.
+--- Fetching TWC Observations (Seoul) ---
+TWC Progress: 0/60 months
+TWC Progress: 10/60 months
+TWC Progress: 20/60 months
+TWC Progress: 30/60 months
+TWC Progress: 40/60 months
+TWC Progress: 50/60 months
+TWC Fetch Success: 1826 days.
+Merged Data: 1826 common days.
+Mean Bias (Seoul): 3.83 F
+Saved to rksi_jma_training.csv
