@@ -2,10 +2,9 @@ import logging
 import asyncio
 from telegram import Update
 from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 from bot.config import Config
 import pytz
+import datetime
 
 # Logging
 logging.basicConfig(
@@ -14,10 +13,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Scheduler
-scheduler = AsyncIOScheduler(timezone=Config.TIMEZONE)
-
-# --- JoBS ---
+# --- JOBS (Unchanged Logic, Adjusted Signature) ---
 
 async def health_check_job(context: ContextTypes.DEFAULT_TYPE):
     """Simple heartbeat logging"""
@@ -83,39 +79,36 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Main ---
 
-async def post_init(application: ApplicationBuilder):
-    """
-    Start the scheduler AFTER the bot's event loop is running.
-    """
-    logger.info("⚡️ Post-Init: Starting Scheduler...")
-    scheduler.start()
-    logger.info(f"✅ Scheduler started. ATL: {Config.RUN_TIME_EST}, SEL: 22:00, Watcher: Hourly")
-
 def main():
-    # Pass post_init to the builder
-    application = ApplicationBuilder().token(Config.TELEGRAM_TOKEN).post_init(post_init).build()
+    # Build Application
+    application = ApplicationBuilder().token(Config.TELEGRAM_TOKEN).build()
     
     # 1. Handlers
     application.add_handler(CommandHandler('start', start))
 
-    # 2. Scheduler Setup (Define jobs, but don't start yet)
+    # 2. Job Queue Setup (Native PTB)
+    job_queue = application.job_queue
     
     # A. Heartbeat (Hourly)
-    scheduler.add_job(health_check_job, 'interval', minutes=60, args=[application])
+    job_queue.run_repeating(health_check_job, interval=3600, first=10)
     
     # B. Atlanta Daily (11:00 AM ET)
+    # Parse Time
     h_atl, m_atl = map(int, Config.RUN_TIME_EST.split(":"))
-    trigger_atl = CronTrigger(hour=h_atl, minute=m_atl, timezone=Config.TIMEZONE)
-    scheduler.add_job(daily_prediction_job, trigger_atl, args=[application])
+    # PTB JobQueue uses datetime.time with timezone
+    t_atl = datetime.time(hour=h_atl, minute=m_atl, tzinfo=pytz.timezone(Config.TIMEZONE))
+    job_queue.run_daily(daily_prediction_job, time=t_atl)
     
     # C. Seoul Daily (10:00 PM ET)
-    trigger_korea = CronTrigger(hour=22, minute=0, timezone=Config.TIMEZONE)
-    scheduler.add_job(seoul_wrapper_job, trigger_korea, args=[application])
+    t_sel = datetime.time(hour=22, minute=0, tzinfo=pytz.timezone(Config.TIMEZONE))
+    job_queue.run_daily(seoul_wrapper_job, time=t_sel)
 
     # D. Hourly Watcher (Interval)
-    scheduler.add_job(hourly_watcher_job, 'interval', minutes=60, args=[application])
+    job_queue.run_repeating(hourly_watcher_job, interval=3600, first=60)
     
-    # 3. Run Bot (This creates the loop and calls post_init)
+    logger.info(f"JobQueue started. ATL: {t_atl}, SEL: {t_sel}, Watcher: Hourly")
+    
+    # 3. Run Bot
     application.run_polling()
 
 if __name__ == '__main__':
