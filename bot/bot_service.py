@@ -83,13 +83,22 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # --- Main ---
 
+async def post_init(application: ApplicationBuilder):
+    """
+    Start the scheduler AFTER the bot's event loop is running.
+    """
+    logger.info("⚡️ Post-Init: Starting Scheduler...")
+    scheduler.start()
+    logger.info(f"✅ Scheduler started. ATL: {Config.RUN_TIME_EST}, SEL: 22:00, Watcher: Hourly")
+
 def main():
-    application = ApplicationBuilder().token(Config.TELEGRAM_TOKEN).build()
+    # Pass post_init to the builder
+    application = ApplicationBuilder().token(Config.TELEGRAM_TOKEN).post_init(post_init).build()
     
     # 1. Handlers
     application.add_handler(CommandHandler('start', start))
 
-    # 2. Scheduler Setup
+    # 2. Scheduler Setup (Define jobs, but don't start yet)
     
     # A. Heartbeat (Hourly)
     scheduler.add_job(health_check_job, 'interval', minutes=60, args=[application])
@@ -106,11 +115,7 @@ def main():
     # D. Hourly Watcher (Interval)
     scheduler.add_job(hourly_watcher_job, 'interval', minutes=60, args=[application])
     
-    # Start Scheduler
-    scheduler.start()
-    logger.info(f"Scheduler started. ATL: {Config.RUN_TIME_EST}, SEL: 22:00, Watcher: Hourly")
-    
-    # Run Bot
+    # 3. Run Bot (This creates the loop and calls post_init)
     application.run_polling()
 
 if __name__ == '__main__':
