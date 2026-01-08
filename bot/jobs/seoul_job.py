@@ -93,9 +93,9 @@ def run_seoul_cycle():
 
         # Thresholds
         if is_fahrenheit:
-            valid_threshold = 2.0 
+            valid_threshold = 1.9 
         else:
-            valid_threshold = 1.0
+            valid_threshold = 0.9 # Lower slightly to catch "1.0" edge cases
             
         signal = "WAIT"
         icon = "😐"
@@ -110,10 +110,10 @@ def run_seoul_cycle():
                 icon = "🔴"
         else:
             # Directional Markets
-            if edge > valid_threshold: 
+            if edge >= valid_threshold: 
                 signal = "BET YES"
                 icon = "🟢"
-            elif edge < -valid_threshold: 
+            elif edge <= -valid_threshold: 
                 signal = "BET NO" 
                 icon = "🔴"
             
