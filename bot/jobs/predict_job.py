@@ -118,12 +118,13 @@ def run_prediction_cycle():
             
         # Get Price
         # Start with YES token
+        logger.info(f"Fetching Price for Token: {m.get('token_yes')}")
         price_yes = scanner.get_price(m['token_yes'])
         price_no = scanner.get_price(m['token_no'])
         
         # Display
         report.append(f"\nQuestion: {question}")
-        report.append(f"Strike: **{strike}** | Edge: {edge:+.1f}F")
+        report.append(f"Temp Threshold: **{strike}** | Edge: {edge:+.1f}F")
         report.append(f"Signal: {icon} **{signal}**")
         if price_yes:
             report.append(f"Price (Yes): {price_yes:.2f}c")

@@ -76,10 +76,20 @@ class MarketScanner:
             if match:
                 strike = int(match.group(1))
                 # Get Token IDs
-                # Usually outcomes are ["Yes", "No"]
-                # JSON structure varies. Assuming standard.
-                t_yes = m.get('clobTokenIds', [])[0] if len(m.get('clobTokenIds', [])) > 0 else None
-                t_no = m.get('clobTokenIds', [])[1] if len(m.get('clobTokenIds', [])) > 1 else None
+                # Get Token IDs
+                raw_tokens = m.get('clobTokenIds', [])
+                import json
+                
+                if isinstance(raw_tokens, str):
+                    try:
+                        tokens = json.loads(raw_tokens)
+                    except:
+                        tokens = []
+                else:
+                    tokens = raw_tokens
+                    
+                t_yes = tokens[0] if len(tokens) > 0 else None
+                t_no = tokens[1] if len(tokens) > 1 else None
                 
                 results.append({
                     "strike": strike,
