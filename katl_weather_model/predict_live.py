@@ -11,8 +11,11 @@ try:
 except ImportError:
     from backports import zoneinfo
 
+import os
+
 # --- Settings ---
-API_KEY = "e1f10a1e78da46f5b10a1e78da96f525"
+# Default to the known working key if env var is missing (Backward Comp for local run)
+API_KEY = os.getenv("TWC_API_KEY", "e1f10a1e78da46f5b10a1e78da96f525")
 LOCATION = "KATL:9:US"
 MODEL_PATH = "/Users/Amos/weather-model/katl_weather_model/katl_xgb_model.json"
 HISTORY_FILE = "/Users/Amos/weather-model/katl_weather_model/katl_full_history.csv"
