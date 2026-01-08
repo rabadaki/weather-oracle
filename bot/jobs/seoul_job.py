@@ -35,8 +35,18 @@ def run_seoul_cycle():
         return f"🇰🇷 Seoul Forecast: **{pred_c:.1f}°C** / **{pred_f:.1f}°F**\nStats: Markets closed/not found."
 
     # Step 3: Compare
+    logger.info("Step 3: Compare")
     report = [f"🇰🇷 **The Seoul Oracle** ({target_date})"]
+    
+    # Detailed Breakdown
+    comps = model_result.get('components', {})
+    jma_val = comps.get('JMA_Raw_C')
+    ml_val = comps.get('Pure_ML_C')
+    
+    breakdown_str = f"(JMA GSM: {jma_val:.1f}°C | ML: {ml_val:.1f}°C)"
+    
     report.append(f"My Prediction: **{pred_c:.1f}°C** ({pred_f:.1f}°F)")
+    report.append(f"_{breakdown_str}_")
     
     for m in markets:
         strike = m['strike']
@@ -116,6 +126,10 @@ def run_seoul_cycle():
             elif edge <= -valid_threshold: 
                 signal = "BET NO" 
                 icon = "🔴"
+            else:
+                 # In between -0.9 and +0.9
+                 signal = f"WAIT (Edge {edge:+.1f} < {valid_threshold})"
+                 icon = "😐"
             
         price_yes = scanner.get_price(m['token_yes'])
         
