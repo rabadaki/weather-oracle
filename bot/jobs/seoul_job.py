@@ -50,27 +50,77 @@ def run_seoul_cycle():
         is_fahrenheit = strike > 20
         unit = "F" if is_fahrenheit else "C"
         
-        if is_fahrenheit:
-            edge = pred_f - strike
-            threshold = 2.0 # F
+        # LOGIC UPGRADE:
+        # Detect: "or below" (Lower), "or higher" (Higher), or "Exact" (Bin)
+        
+        q_lower = question.lower()
+        if "or below" in q_lower or "less" in q_lower:
+            m_type = "LOWER"  # Want Pred < Strike
+            # Edge: Strike - Pred. (e.g. Strike 2, Pred 9 -> 2-9 = -7. BAD)
+            # e.g. Strike 10, Pred 9 -> 10-9 = +1. GOOD.
+            if is_fahrenheit: 
+                edge = strike - pred_f
+            else:
+                edge = strike - pred_c
+                
+        elif "or higher" in q_lower or "more" in q_lower or "above" in q_lower:
+            m_type = "HIGHER" # Want Pred > Strike
+            if is_fahrenheit:
+                edge = pred_f - strike
+            else:
+                edge = pred_c - strike
+                
         else:
-            edge = pred_c - strike
-            threshold = 1.0 # C
+            m_type = "EXACT" # Want Pred ~= Strike
+            # Standard bin width is usually 1 degree.
+            # If Pred is 9.0, and Strike is 3. We want to be FAR AWAY.
+            # If we just do Edge = Pred - Strike, 9-3=6. That implies YES. Wrong.
+            # We want to SHORT if we are far away.
+            # Distance metric.
+            if is_fahrenheit:
+                dist = abs(pred_f - strike)
+            else:
+                dist = abs(pred_c - strike)
+            
+            # Logic: If dist < 0.5, we like it. Edge = +Positive.
+            # If dist > 2.0, we hate it. Edge = -Negative.
+            # Let's define Edge as "Safety Margin". 
+            # This is tricky for a simple "Edge" number.
+            # Let's say Edge = 1.0 - dist.
+            # If dist is 0 (Perfect), Edge = +1.0.
+            # If dist is 6 (Way off), Edge = -5.0. 
+            edge = 1.0 - dist
+
+        # Thresholds
+        if is_fahrenheit:
+            valid_threshold = 2.0 
+        else:
+            valid_threshold = 1.0
             
         signal = "WAIT"
         icon = "😐"
         
-        if edge > threshold: 
-            signal = "BET YES"
-            icon = "🟢"
-        elif edge < -threshold: 
-            signal = "BET NO" 
-            icon = "🔴"
+        # Exact markets need a specialized threshold (harder to hit)
+        if m_type == "EXACT":
+            if edge > 0.2: # very close match
+                signal = "BET YES"
+                icon = "🟢"
+            elif edge < -1.5: # definitely not it
+                signal = "BET NO"
+                icon = "🔴"
+        else:
+            # Directional Markets
+            if edge > valid_threshold: 
+                signal = "BET YES"
+                icon = "🟢"
+            elif edge < -valid_threshold: 
+                signal = "BET NO" 
+                icon = "🔴"
             
         price_yes = scanner.get_price(m['token_yes'])
         
         report.append(f"\nQuestion: {question}")
-        report.append(f"Strike: **{strike}** | Edge: {edge:+.1f}{unit}")
+        report.append(f"Type: {m_type} | Strike: **{strike}** | Edge: {edge:+.1f}{unit}")
         report.append(f"Signal: {icon} **{signal}**")
         if price_yes:
             report.append(f"Price (Yes): {price_yes:.2f}c")

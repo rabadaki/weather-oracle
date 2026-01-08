@@ -17,8 +17,12 @@ import os
 # Default to the known working key if env var is missing (Backward Comp for local run)
 API_KEY = os.getenv("TWC_API_KEY", "e1f10a1e78da46f5b10a1e78da96f525")
 LOCATION = "KATL:9:US"
-MODEL_PATH = "/Users/Amos/weather-model/katl_weather_model/katl_xgb_model.json"
-HISTORY_FILE = "/Users/Amos/weather-model/katl_weather_model/katl_full_history.csv"
+
+# Dynamic Paths for Docker/Local compatibility
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "katl_xgb_model.json")
+HISTORY_FILE = os.path.join(BASE_DIR, "katl_full_history.csv")
+BIAS_MODEL_PATH = os.path.join(BASE_DIR, "katl_bias_model.json")
 
 # --- Helpers ---
 def get_twc_forecast():
@@ -264,7 +268,7 @@ def predict_live():
         }])
         
         bias_model = xgb.Booster()
-        bias_model.load_model("/Users/Amos/weather-model/katl_weather_model/katl_bias_model.json")
+        bias_model.load_model(BIAS_MODEL_PATH)
         pred_bias = bias_model.predict(xgb.DMatrix(bias_feats))[0]
         
         corrected_mos = mos_max + pred_bias
