@@ -61,20 +61,60 @@ def run_prediction_cycle():
         strike = m['strike']
         question = m['question']
         
-        # Logic: If Pred > Strike + 2.0 -> YES
-        # If Pred < Strike - 2.0 -> NO
-        # Else -> NEUTRAL
+        # Logic Upgrade: Handle Buckets (Lower, Higher, Binary)
+        q_lower = question.lower()
         
-        edge = pred_val - strike
+        # 1. Lower Bound ("61 or below")
+        if "or below" in q_lower or "less" in q_lower:
+             m_type = "LOWER"
+             edge = strike - pred_val
+             
+        # 2. Higher Bound ("72 or higher")
+        elif "or higher" in q_lower or "above" in q_lower:
+             m_type = "HIGHER"
+             edge = pred_val - strike
+             
+        # 3. Specific Range ("between 62 and 63")
+        # Regex usually catches the first number (62) as 'strike'.
+        # We need to detect if it's a range.
+        elif "between" in q_lower or "-" in q_lower:
+             m_type = "BIN"
+             # Dist logic.
+             # If Pred is 72, and Bucket is 62-63.
+             # Distance is ~10. Bad.
+             # If Pred is 62.5, Distance is 0. Good.
+             dist = abs(pred_val - strike)
+             # Invert to make Edge positive for "Good".
+             # Edge = 1.0 - dist.
+             edge = 1.0 - dist
+             
+        else:
+             # Fallback (Generic "Temperature is X"?)
+             m_type = "HIGHER" # Assume default "Will be > X" if unclear, but usually it's explicit.
+             edge = pred_val - strike
+             
         signal = "WAIT"
         icon = "😐"
         
-        if edge > 1.5: 
-            signal = "BET YES"
-            icon = "🟢"
-        elif edge < -1.5: 
-            signal = "BET NO" 
-            icon = "🔴"
+        # Thresholds
+        if m_type == "BIN":
+            # Exact/Bin markets are hard.
+            # If we are within 0.5F, we bet YES.
+            # If we are > 2.0F away, we bet NO.
+            if edge > 0.5: # Dist < 0.5
+                 signal = "BET YES"
+                 icon = "🟢"
+            elif edge < -2.0: # Dist > 3.0
+                 signal = "BET NO"
+                 icon = "🔴"
+        else:
+            # Directional
+            if edge > 2.0: 
+                signal = "BET YES"
+                icon = "🟢"
+            elif edge < -2.0: 
+                signal = "BET NO" 
+                icon = "🔴"
             
         # Get Price
         # Start with YES token
