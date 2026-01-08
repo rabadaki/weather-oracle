@@ -27,6 +27,7 @@ You must set the Environment Variables in Railway settings:
 | :--- | :--- | :--- |
 | `TELEGRAM_TOKEN` | `...` | Your Bot Token from BotFather |
 | `TWC_API_KEY` | `...` | Your Weather Company API Key |
+| `TELEGRAM_CHAT_ID` | `122628236` | Your User ID (for persistent alerts) |
 | `TIMEZONE` | `US/Eastern` | Bot Timezone (Default) |
 | `RUN_TIME_EST` | `11:00` | Daily Run Time |
 

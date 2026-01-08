@@ -30,11 +30,13 @@ async def daily_prediction_job(context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"REPORT:\n{result}")
     
     # Send Notification
-    if 'latest_chat_id' in context.bot_data:
-        cid = context.bot_data['latest_chat_id']
-        await context.bot.send_message(chat_id=cid, text=result, parse_mode='Markdown')
+    # Send Notification
+    chat_id = context.bot_data.get('latest_chat_id', Config.TELEGRAM_CHAT_ID)
+    
+    if chat_id:
+        await context.bot.send_message(chat_id=chat_id, text=result, parse_mode='Markdown')
     else:
-        logger.warning("No Chat ID found to push notification. Run /start first.")
+        logger.warning("No Chat ID found. Run /start or set TELEGRAM_CHAT_ID env var.")
 
 async def seoul_wrapper_job(context: ContextTypes.DEFAULT_TYPE):
     """Seoul Prediction Job"""
@@ -44,9 +46,11 @@ async def seoul_wrapper_job(context: ContextTypes.DEFAULT_TYPE):
     result = await asyncio.to_thread(run_seoul_cycle)
     logger.info(f"SEOUL REPORT:\n{result}")
     
-    if 'latest_chat_id' in context.bot_data:
-        cid = context.bot_data['latest_chat_id']
-        await context.bot.send_message(chat_id=cid, text=result, parse_mode='Markdown')
+    logger.info(f"SEOUL REPORT:\n{result}")
+    
+    chat_id = context.bot_data.get('latest_chat_id', Config.TELEGRAM_CHAT_ID)
+    if chat_id:
+        await context.bot.send_message(chat_id=chat_id, text=result, parse_mode='Markdown')
 
 async def hourly_watcher_job(context: ContextTypes.DEFAULT_TYPE):
     """Hourly Opportunity Watcher"""
@@ -64,9 +68,10 @@ async def hourly_watcher_job(context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"Hourly SEL: {res_sel}")
     
     # Notification (Verbose Mode)
-    if 'latest_chat_id' in context.bot_data:
-         cid = context.bot_data['latest_chat_id']
-         await context.bot.send_message(chat_id=cid, text=f"⏱️ **Hourly Watcher (ATL)**\n{res_atl}\n\n🇰🇷 **Seoul**\n{res_sel}", parse_mode='Markdown')
+    # Notification (Verbose Mode)
+    chat_id = context.bot_data.get('latest_chat_id', Config.TELEGRAM_CHAT_ID)
+    if chat_id:
+         await context.bot.send_message(chat_id=chat_id, text=f"⏱️ **Hourly Watcher (ATL)**\n{res_atl}\n\n🇰🇷 **Seoul**\n{res_sel}", parse_mode='Markdown')
 
 
 # --- Handlers ---
